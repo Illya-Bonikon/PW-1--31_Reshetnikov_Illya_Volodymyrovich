@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fuel Composition Calculator</title>
+    	<!-- 
+			* Overview:
+			This Fuel Composition Calculator allows users to input the percentages of  components 
+			in a fuel mixture including Carbon, Hydrogen, Oxygen, Sulfur, moisture content, 
+			ash content, and vanadium content. The program calculates the combustible mass, 
+			lower heating value (LHV), and the composition of the fuel.
+			The application provides real-time validation of inputs.
+	    -->
+
+	<style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        label {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        input {
+            margin-left: 10px;
+            width: 60px;
+        }
+        table {
+            border-collapse: collapse;
+            margin-top: 20px;
+            width: auto;
+        }
+        th, td {
+            border: 1px solid #000;
+            padding: 5px;
+            text-align: center;
+        }
+        #errorMessage {
+            color: red;
+        }
+    </style>
+	<script>
+        /**
+         * Retrieves input values from the user interface.
+         * Converts input values to floating-point numbers and defaults to 0 if invalid.
+         */
+		function getInputValues() {
+            return {
+                C: parseFloat(document.getElementById("CP").value) || 0,
+                H: parseFloat(document.getElementById("HP").value) || 0,
+                O: parseFloat(document.getElementById("OP").value) || 0,
+                S: parseFloat(document.getElementById("SP").value) || 0,
+                N: parseFloat(document.getElementById("NP").value) || 0,
+                W: parseFloat(document.getElementById("W").value) || 0,
+                A: parseFloat(document.getElementById("A").value) || 0,
+                V: parseFloat(document.getElementById("V").value) || 0,
+                Qi_daf: parseFloat(document.getElementById("Qi_daf").value) || 0
+            };
+        }
+
+        /**
+         * Validates the input percentages to ensure the total does not exceed 100%.
+         * Updates the calculate button's disabled state based on the validation result.
+         */
+		function validateSum() {
+            const { C, H, O, S, N, W, A } = getInputValues();
+            const total = C + H + O + S + N + W + A;
+
+            const button = document.getElementById("calculateButton");
+            const message = document.getElementById("errorMessage");
+
+            if (total !== 100) {
+                button.disabled = true;
+                message.textContent = `The total sum must be 100%. Current sum: ${total.toFixed(2)}%`;
+            } else {
+                button.disabled = false;
+                message.textContent = "";
+            }
+        }
+
+        /**
+         * Calculates the combustible mass and other parameters based on user input.
+         * Updates the results section with the calculated values.
+         */
+		function calculate() {
+            const { C, H, O, S, N, Qi_daf, W, A, V } = getInputValues();
+
+            const Kp = (100 - W - A) / 100;
+            const C_r = C * Kp;
+            const H_r = H * Kp;
+            const O_r = O * Kp;
+            const S_r = S * Kp;
+            const N_r = N * Kp;
+            const V_r = V * (100 - W) / 100;
+            const Qr = Qi_daf * Kp;
+
+            document.getElementById("results").innerHTML = `
+                <table>
+                    <tr><th>Parameter</th><th>Working Mass (%)</th></tr>
+                    <tr><td title="Carbon">C</td><td>${C_r.toFixed(2)}</td></tr>
+                    <tr><td title="Hydrogen">H</td><td>${H_r.toFixed(2)}</td></tr>
+                    <tr><td title="Oxygen">O</td><td>${O_r.toFixed(2)}</td></tr>
+                    <tr><td title="Sulfur">S</td><td>${S_r.toFixed(2)}</td></tr>
+                    <tr><td title="Nitrogen">N</td><td>${N_r.toFixed(2)}</td></tr>
+                    <tr><td title="Vanadium Content (mg/kg)">V</td><td>${V_r.toFixed(2)}</td></tr>
+                    <tr><td title="Lower Heating Value (MJ/kg)">LHV</td><td>${Qr.toFixed(2)}</td></tr>
+                </table>`;
+        }
+
+        /**
+         * Adds event listeners to all numerical input fields to validate the sum of components dynamically.
+         */
+        document.addEventListener("DOMContentLoaded", function() {
+            document.querySelectorAll("input[type='number']").forEach(input => {
+                input.addEventListener("input", validateSum);
+            });
+            validateSum(); // Ensure validation runs on page load
+        });
+    </script>
+</head>
+<body>
+    <h2>Fuel Composition Calculator</h2>
+    <fieldset>
+        <legend>Enter the composition percentages</legend>
+
+        <!-- Input for Hydrogen composition -->
+        <label for="HP" title="Hydrogen">H<sup>p</sup>
+            <input type="number" id="HP" placeholder="HP" min="0" max="100" step="0.01" value="1.5"> (%)
+        </label>
+
+        <!-- Input for Carbon composition -->
+        <label for="CP" title="Carbon">C<sup>p</sup>
+            <input type="number" id="CP" placeholder="CP" min="0" max="100" step="0.01" value="76.4"> (%)
+        </label>
+
+        <!-- Input for Sulfur composition -->
+        <label for="SP" title="Sulfur">S<sup>p</sup>
+            <input type="number" id="SP" placeholder="SP" min="0" max="100" step="0.01" value="1.7"> (%)
+        </label>
+
+        <!-- Input for Nitrogen composition -->
+        <label for="NP" title="Nitrogen">N<sup>p</sup>
+            <input type="number" id="NP" placeholder="NP" min="0" max="100" step="0.01" value="0.8"> (%)
+        </label>
+
+        <!-- Input for Oxygen composition -->
+        <label for="OP" title="Oxygen">O<sup>p</sup>
+            <input type="number" id="OP" placeholder="OP" min="0" max="100" step="0.01" value="1.3"> (%)
+        </label>
+
+        <!-- Input for Moisture content -->
+        <label for="W" title="Moisture">W
+            <input type="number" id="W" placeholder="W" min="0" max="100" step="0.01" value="5"> (%)
+        </label>
+
+        <!-- Input for Ash content -->
+        <label for="A" title="Ash">A
+            <input type="number" id="A" placeholder="A" min="0" max="100" step="0.01" value="13.3"> (%)
+		</label>
+
+		<!-- Input for Lower Heating Value -->
+		<label for="Qi_daf" title="Lower Heating Value">Qi_daf:
+			<input type="number" id="Qi_daf" placeholder="Qi_daf" min="0" step="0.01" value="40.40"> (MJ/kg)
+		</label>
+		
+		<!-- Input for Vanadium Content -->
+		<label for="V" title="Vanadium Content">Vanadium Content:
+			<input type="number" id="V" placeholder="V" min="0" step="0.1" value="333.3"> (mg/kg)
+		</label>
+
+    </fieldset>
+
+    <!-- Error message display -->
+    <p id="errorMessage" style="color: red;"></p>
+
+    <!-- Calculate button, initially disabled -->
+    <button id="calculateButton" style="padding: 10px;" onclick="calculate()" disabled>Calculate</button>
+
+    <!-- Results display area -->
+    <div id="results"></div>
+</body>
+</html>

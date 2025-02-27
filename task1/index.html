@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fuel Composition Calculator</title> 
+	
+	<!-- 
+        * Overview:
+        This Fuel Composition Calculator allows users to input the percentages of various 
+        components in a fuel mixture with Hydrogen, Carbon, Sulfur, Nitrogen, Oxygen, Moisture, and Ash. 
+		The program calculates the dry mass and combustible mass of the fuel,and the lower heating value (LHV). 
+        The application provides real-time validation of inputs.
+    -->
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        label {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        input {
+            margin-left: 10px;
+            width: 60px;
+        }
+        table {
+            border-collapse: collapse;
+            margin-top: 20px;
+            width: auto;
+        }
+        th, td {
+            border: 1px solid #303030;
+            padding: 5px;
+            text-align: center;
+        }
+        #errorMessage {
+            color: red;
+        }
+    </style>
+    <script>
+        /**
+         * Retrieves and parses input values from the document.
+         * Ensures values are converted to numbers and defaults to 0 if empty or invalid.
+         *
+         * @returns {Object} Fuel composition values as an object with numeric properties.
+         * @property {number} HP - Hydrogen percentage.
+         * @property {number} CP - Carbon percentage.
+         * @property {number} SP - Sulfur percentage.
+         * @property {number} NP - Nitrogen percentage.
+         * @property {number} OP - Oxygen percentage.
+         * @property {number} WP  - Moisture percentage.
+         * @property {number} A  - Ash percentage.
+         */
+        function getInputValues() {
+            return {
+                HP: parseFloat(document.getElementById("HP").value) || 0,
+                CP: parseFloat(document.getElementById("CP").value) || 0,
+                SP: parseFloat(document.getElementById("SP").value) || 0,
+                NP: parseFloat(document.getElementById("NP").value) || 0,
+                OP: parseFloat(document.getElementById("OP").value) || 0,
+                WP: parseFloat(document.getElementById("WP").value) || 0,
+                A: parseFloat(document.getElementById("A").value) || 0
+            };
+        }
+
+        /**
+         ** Validates that the sum of all input values equals 100%. 
+		 * If its not the calculation button is disabled, and an error message is displayed. 
+		 * Otherwise, the button is enabled.
+		*/
+		 function validateSum() {
+            // Extract input values from the form
+            const { HP, CP, SP, NP, OP, WP, A } = getInputValues();
+            const total = HP + CP + SP + NP + OP + WP + A;
+            
+            // Select UI elements
+            const button = document.getElementById("calculateButton");
+            const message = document.getElementById("errorMessage");
+
+            // Validate the sum and update UI
+            if (total !== 100) {
+                button.disabled = true;
+                message.textContent = `The sum of the components must equal 100%. Current sum: ${total.toFixed(2)}%`;
+            } else {
+                button.disabled = false;
+                message.textContent = "";
+            }
+        }
+
+
+		/**	
+		 ** Calculates the dry mass, combustible mass, and lower heating value of fuel composition.
+		 *
+		 ** Calculation Details:
+		 * - KRS: Dry mass conversion factor (total mass minus water).
+		 * - KRG: Combustible mass conversion factor (total mass minus water and ash).
+		 * - Dry Mass: Based on the dry state.
+		 * - Combustible Mass: Based on the fuel excluding non-combustible ash.
+		 * - AS: Ash content for dry mass.
+		 * - QrH: Lower heating value of the fuel (MJ/kg).
+		 */
+
+		 function calculate() {
+            // Retrieve input values from the form
+            const { HP, CP, SP, NP, OP, WP, A } = getInputValues();
+
+            // Compute correction factors
+            const KRS = 100 / (100 - WP);       // Dry mass conversion factor
+            const KRG = 100 / (100 - WP - A);   // Combustible mass conversion factor
+
+            // Elements involved in calculations
+            const elements = { HP, CP, SP, NP, OP };
+            let dryMass = {};        // Dry mass composition
+            let combustibleMass = {}; // Combustible mass composition
+
+            // Compute dry and combustible mass values
+            for (const key in elements) {
+                dryMass[key] = elements[key] * KRS;
+                combustibleMass[key] = elements[key] * KRG;
+            }
+            
+            // Adjusted ash content for dry mass
+            const AS = A * KRS;
+
+            // Compute lower heating value (MJ/kg)
+            const QrH = 339 * CP + 1030 * HP - 108.8 * (OP - SP	) - 25 * WP;
+
+            // Update the content with the results
+            document.getElementById("results").innerHTML =
+                `<table>
+                    <tr><th>Component</th><th>Dry Mass (%)</th><th>Combustible Mass (%)</th></tr>
+                    ${Object.entries(elements).map(([key, _]) =>
+                        `<tr><td>${key.replace('P', '<sup>p</sup>')}</td><td>${dryMass[key].toFixed(2)}</td><td>${combustibleMass[key].toFixed(2)}</td></tr>`).join('')}
+                    <tr><td>A</td><td>${AS.toFixed(2)}</td><td>-</td></tr>
+                </table>
+                <p>Lower heating value: ${QrH.toFixed(2)} MJ/kg</p>`;
+        }
+
+
+		/**
+		 ** Adds event listeners to all numerical input fields to validate the sum of components dynamically.
+		 * Ensures the validation function runs whenever an input value is changed.
+		 *
+		 * - Listens for the `DOMContentLoaded` event to ensure the script runs after the page is fully loaded.
+		 * - Selects all `<input>` elements of type "number" and attaches an "input" event listener to each.
+		 * - Calls `validateSum()` on every change to keep calculations accurate and ensure proper validation.
+		 */
+		document.addEventListener("DOMContentLoaded", function() {
+			// Select all number input fields
+			document.querySelectorAll("input[type='number']").forEach(input => {
+				// Attach an event listener to trigger validation when input changes
+				input.addEventListener("input", validateSum);
+			});
+		});
+
+    </script>
+</head>
+<body>
+	<h2>Fuel Composition Calculator</h2>
+
+	<fieldset>
+		<legend>Enter the composition percentages</legend>
+
+		<!-- Input for Hydrogen composition -->
+		<label for="HP" title="Hydrogen">H<sup>p</sup>
+			<input type="number" id="HP" placeholder="HP" min="0" max="100" step="0.01" value="1.5"> (%)
+		</label>
+
+		<!-- Input for Carbon composition -->
+		<label for="CP" title="Carbon">C<sup>p</sup>
+			<input type="number" id="CP" placeholder="CP" min="0" max="100" step="0.01" value="76.4"> (%)
+		</label>
+
+		<!-- Input for Sulfur composition -->
+		<label for="SP" title="Sulfur">S<sup>p</sup>
+			<input type="number" id="SP" placeholder="SP" min="0" max="100" step="0.01" value="1.7"> (%)
+		</label>
+
+		<!-- Input for Nitrogen composition -->
+		<label for="NP" title="Nitrogen">N<sup>p</sup>
+			<input type="number" id="NP" placeholder="NP" min="0" max="100" step="0.01" value="0.8"> (%)
+		</label>
+
+		<!-- Input for Oxygen composition -->
+		<label for="OP" title="Oxygen">O<sup>p</sup>
+			<input type="number" id="OP" placeholder="OP" min="0" max="100" step="0.01" value="1.3"> (%)
+		</label>
+
+		<!-- Input for Moisture content -->
+		<label for="W" title="Moisture">W<sup>p</sup>
+			<input type="number" id="WP" placeholder="WP" min="0" max="100" step="0.01" value="5"> (%)
+		</label>
+
+		<!-- Input for Ash content -->
+		<label for="A" title="Ash">A
+			<input type="number" id="A" placeholder="A" min="0" max="100" step="0.01" value="13.3"> (%)
+		</label>
+
+	</fieldset>
+
+	<!-- Error message display -->
+	<p id="errorMessage" style="color: red;"></p>
+
+	<!-- Calculate button, initially disabled -->
+	<button id="calculateButton" style="padding: 10px;" onclick="calculate()" disabled>Calculate</button>
+
+	<!-- Results display area -->
+	<div id="results"></div>
+
+</body>
+</html>
